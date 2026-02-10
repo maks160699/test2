@@ -1,0 +1,326 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>Для тебя ✨</title>
+    
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:italic,wght@400;700&family=Montserrat:wght@300;400&display=swap" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+
+    <style>
+        :root {
+            --pink-bg: #fdf2f2;
+            --accent-pink: #e5b3b3;
+            --text-dark: #6b5b5b;
+            --glass: rgba(255, 255, 255, 0.82);
+        }
+
+        body, html {
+            margin: 0; padding: 0;
+            background: radial-gradient(circle at center, #fff5f5 0%, #fdf2f2 100%);
+            font-family: 'Montserrat', sans-serif;
+            color: var(--text-dark);
+            overflow: hidden;
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            perspective: 1200px; /* Для 3D наклона */
+        }
+
+        #petal-canvas {
+            position: fixed;
+            top: 0; left: 0;
+            pointer-events: none;
+            z-index: 1;
+        }
+
+        .envelope-wrapper {
+            position: relative;
+            z-index: 20;
+            cursor: pointer;
+            will-change: transform;
+        }
+
+        .envelope {
+            width: 280px;
+            height: 180px;
+            background: #f8dada;
+            position: relative;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .envelope-flap {
+            position: absolute;
+            top: 0; left: 0;
+            width: 0; height: 0;
+            border-left: 140px solid transparent;
+            border-right: 140px solid transparent;
+            border-top: 100px solid #e5b3b3;
+            transform-origin: top;
+            z-index: 3;
+        }
+
+        .envelope::after {
+            content: "Открыть письмо ✨";
+            position: absolute;
+            top: 60%; width: 100%;
+            text-align: center;
+            font-family: 'Playfair Display', serif;
+            color: white;
+            font-size: 14px;
+        }
+
+        .container {
+            max-width: 450px;
+            width: 85%;
+            position: fixed;
+            top: 50%; left: 50%;
+            transform: translate(-50%, -50%) scale(0.8);
+            opacity: 0;
+            z-index: 10;
+            pointer-events: none;
+            transform-style: preserve-3d; /* Важно для 3D */
+        }
+
+        .letter-card {
+            background: var(--glass);
+            backdrop-filter: blur(15px);
+            -webkit-backdrop-filter: blur(15px);
+            padding: 30px;
+            border-radius: 40px;
+            border: 1px solid rgba(255, 255, 255, 0.6);
+            box-shadow: 0 25px 50px rgba(229, 179, 179, 0.4);
+            text-align: center;
+            position: relative;
+        }
+
+        /* Магическое свечение сзади */
+        .letter-card::before {
+            content: '';
+            position: absolute;
+            inset: -5px;
+            background: linear-gradient(45deg, #e5b3b3, #ffd7d7, #ffffff, #e5b3b3);
+            background-size: 400% 400%;
+            z-index: -1;
+            filter: blur(20px);
+            border-radius: 45px;
+            opacity: 0.4;
+            animation: glowMove 8s ease infinite;
+        }
+
+        @keyframes glowMove {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+
+        .main-img {
+            width: 100%;
+            border-radius: 25px;
+            margin-bottom: 20px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+        }
+
+        h1 { font-family: 'Playfair Display', serif; font-size: 1.8rem; margin: 0 0 15px 0; }
+        
+        .typewriter-text {
+            font-size: 0.95rem;
+            line-height: 1.7;
+            font-weight: 300;
+            min-height: 80px;
+        }
+
+        .btn-reply {
+            display: inline-block;
+            background: var(--accent-pink);
+            color: white;
+            padding: 14px 35px;
+            text-decoration: none;
+            border-radius: 50px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            font-size: 0.7rem;
+            margin-top: 20px;
+            opacity: 0;
+            box-shadow: 0 5px 15px rgba(229, 179, 179, 0.4);
+        }
+
+        .music-btn {
+            position: fixed;
+            bottom: 30px; right: 25px;
+            background: white;
+            border-radius: 50px;
+            padding: 12px 22px;
+            cursor: pointer;
+            z-index: 1000;
+            color: var(--accent-pink);
+            border: 1px solid var(--accent-pink);
+            font-family: inherit;
+            box-shadow: 0 10px 20px rgba(0,0,0,0.05);
+        }
+    </style>
+</head>
+<body>
+
+    <canvas id="petal-canvas"></canvas>
+
+    <button class="music-btn" id="mBtn" onclick="toggleMusic()">🎵 Музыка</button>
+    
+    <audio id="bgMusic" loop playsinline>
+        <source src="madrugada.mp3" type="audio/mpeg">
+    </audio>
+
+    <div class="envelope-wrapper" id="envWrapper" onclick="openLetter()">
+        <div class="envelope">
+            <div class="envelope-flap" id="flap"></div>
+        </div>
+    </div>
+
+    <div class="container" id="mainCard">
+        <div class="letter-card">
+            <img src="https://i.pinimg.com/1200x/2c/b5/b3/2cb5b3aafd0fa5e8321b598a3ef37bd7.jpg" class="main-img">
+            <h1>С 8 Марта ✨</h1>
+            <div id="textTarget" class="typewriter-text"></div>
+            <a href="https://t.me/max_tttttt" class="btn-reply" id="replyBtn">Сказать спасибо</a>
+        </div>
+    </div>
+
+    <script>
+        const audio = document.getElementById('bgMusic');
+        const mBtn = document.getElementById('mBtn');
+        const mainCard = document.getElementById('mainCard');
+        const textTarget = document.getElementById('textTarget');
+        const fullText = "Я хотел, чтобы этот день начался для тебя с чего-то по-настоящему красивого. Пусть в твоей душе всегда цветет весна, а каждый миг будет наполнен такой же нежностью, как эти лепестки. Ты удивительная.";
+        
+        let isOpened = false;
+
+        // Простое переключение музыки (рабочий вариант)
+        function toggleMusic() {
+            if (audio.paused) { 
+                audio.play(); 
+                mBtn.innerHTML = "⏸ Пауза";
+                mBtn.style.background = "var(--accent-pink)";
+                mBtn.style.color = "white";
+            } else { 
+                audio.pause(); 
+                mBtn.innerHTML = "🎵 Музыка";
+                mBtn.style.background = "white";
+                mBtn.style.color = "var(--accent-pink)";
+            }
+        }
+
+        function openLetter() {
+            if(isOpened) return;
+            isOpened = true;
+
+            // Запуск музыки при открытии
+            audio.play().catch(() => console.log("Браузер ждет клика по кнопке"));
+            mBtn.innerHTML = "⏸ Пауза";
+            mBtn.style.background = "var(--accent-pink)";
+            mBtn.style.color = "white";
+
+            const tl = gsap.timeline();
+            tl.to("#flap", { rotationX: 180, duration: 0.8, ease: "power2.inOut" })
+              .to("#envWrapper", { y: 1000, opacity: 0, duration: 1.2, ease: "power2.in" }, "+=0.2")
+              .to(mainCard, { 
+                  opacity: 1, 
+                  scale: 1, 
+                  duration: 1.5, 
+                  ease: "elastic.out(1, 0.8)", 
+                  pointerEvents: "all",
+                  onComplete: typeWriter 
+              }, "-=0.6");
+        }
+
+        function typeWriter() {
+            let i = 0;
+            textTarget.innerHTML = "";
+            function type() {
+                if (i < fullText.length) {
+                    textTarget.innerHTML += fullText.charAt(i);
+                    i++;
+                    setTimeout(type, 45);
+                } else {
+                    gsap.to("#replyBtn", { opacity: 1, y: -10, duration: 1 });
+                    startFloating(); // Запускаем мягкое покачивание в конце
+                }
+            }
+            type();
+        }
+
+        // Эффект 3D наклона (Tilt)
+        document.addEventListener('mousemove', (e) => {
+            if (!isOpened) return;
+            const x = (window.innerWidth / 2 - e.clientX) / 25;
+            const y = (window.innerHeight / 2 - e.clientY) / 25;
+            gsap.to(mainCard, { rotationY: -x, rotationX: y, duration: 0.8 });
+        });
+
+        // Мягкое покачивание (вместо пульсации от баса)
+        function startFloating() {
+            gsap.to(mainCard, {
+                y: "-=10",
+                duration: 2,
+                repeat: -1,
+                yoyo: true,
+                ease: "sine.inOut"
+            });
+        }
+
+        // --- ЛЕПЕСТКИ ---
+        const canvas = document.getElementById('petal-canvas');
+        const ctx = canvas.getContext('2d');
+        let petals = [];
+
+        function resize() {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+        }
+        window.addEventListener('resize', resize);
+        resize();
+
+        class Petal {
+            constructor() { this.reset(); this.y = Math.random() * canvas.height; }
+            reset() {
+                this.x = Math.random() * canvas.width;
+                this.y = -20;
+                this.w = 8 + Math.random() * 8;
+                this.h = 6 + Math.random() * 6;
+                this.opacity = 0.3 + Math.random() * 0.5;
+                this.speedY = 0.6 + Math.random() * 1.5;
+                this.speedX = -0.5 + Math.random() * 1;
+                this.rot = Math.random() * 360;
+            }
+            update() {
+                this.y += this.speedY;
+                this.x += this.speedX;
+                this.rot += 0.5;
+                if (this.y > canvas.height) this.reset();
+            }
+            draw() {
+                ctx.save();
+                ctx.translate(this.x, this.y);
+                ctx.rotate(this.rot * Math.PI / 180);
+                ctx.fillStyle = `rgba(229, 179, 179, ${this.opacity})`;
+                ctx.beginPath();
+                ctx.ellipse(0, 0, this.w, this.h, 0, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.restore();
+            }
+        }
+
+        for (let i = 0; i < 40; i++) petals.push(new Petal());
+        function animate() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            petals.forEach(p => { p.update(); p.draw(); });
+            requestAnimationFrame(animate);
+        }
+        animate();
+    </script>
+</body>
+</html>
